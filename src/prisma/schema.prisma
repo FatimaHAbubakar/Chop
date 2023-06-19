@@ -1,0 +1,117 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id               Int                @id @default(autoincrement())
+    email            String             @unique
+    name             String
+    password         String
+    location         String?
+    address          String?
+    phone            String
+    role             Role
+    deleted          Boolean            @default(false)
+    createdAt        DateTime           @default(now())
+    updatedAt        DateTime           @updatedAt
+    Inventory        Inventory[]
+    Rescue_Vendors   Rescue[]           @relation("rescue_vendors")
+    Rescue_Fiis      Rescue[]           @relation("rescue_fiis")
+    Review_Vendor    Review[]           @relation("review_vendors")
+    Review_Fiis      Review[]           @relation("review_fiis")
+    UserNotification UserNotification[]
+}
+
+model Inventory {
+    id              Int               @id @default(autoincrement())
+    name            String
+    category        String
+    stock           Int
+    discount        Float?
+    price           Float
+    vendor_id       Int
+    User            User              @relation(fields: [vendor_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    deleted         Boolean           @default(false)
+    createdAt       DateTime          @default(now())
+    updatedAt       DateTime          @updatedAt
+    Notification    Notification[]
+    RescueInventory RescueInventory[]
+}
+
+model Review {
+    id          Int      @id @default(autoincrement())
+    star        Int
+    description String?
+    Vendor      User     @relation("review_vendors", fields: [vendor_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    vendor_id   Int
+    FII         User     @relation("review_fiis", fields: [fii_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    fii_id      Int
+    deleted     Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+}
+
+model Rescue {
+    id              Int               @id @default(autoincrement())
+    code            String
+    status          RescueStatus      @default(PENDING)
+    FII             User              @relation("rescue_fiis", fields: [fii_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    fii_id          Int
+    Vendor          User              @relation("rescue_vendors", fields: [vendor_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    vendor_id       Int
+    deleted         Boolean           @default(false)
+    createdAt       DateTime          @default(now())
+    updatedAt       DateTime          @updatedAt
+    RescueInventory RescueInventory[]
+}
+
+model RescueInventory {
+    id           Int       @id @default(autoincrement())
+    Rescue       Rescue    @relation(fields: [rescue_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    rescue_id    Int
+    Inventory    Inventory @relation(fields: [inventory_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    inventory_id Int
+    quantity     Int
+    deleted      Boolean   @default(false)
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+}
+
+model Notification {
+    id               Int                @id @default(autoincrement())
+    message          String
+    Inventory        Inventory          @relation(fields: [inventory_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    inventory_id     Int
+    deleted          Boolean            @default(false)
+    createdAt        DateTime           @default(now())
+    updatedAt        DateTime           @updatedAt
+    UserNotification UserNotification[]
+}
+
+model UserNotification {
+    id              Int          @id @default(autoincrement())
+    seen            Boolean      @default(false)
+    notification    Notification @relation(fields: [notification_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    notification_id Int
+    user            User         @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+    user_id         Int
+    deleted         Boolean      @default(false)
+    createdAt       DateTime     @default(now())
+    updatedAt       DateTime     @updatedAt
+}
+
+enum Role {
+    VENDOR
+    FII
+}
+
+enum RescueStatus {
+    PENDING
+    COMPLETED
+    CANCELED
+}
